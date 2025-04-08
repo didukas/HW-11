@@ -1,0 +1,259 @@
+class RedBlackNode:
+    def __init__(self, key, color="red"):
+        self.key = key
+        self.color = color
+        self.left = None
+        self.right = None
+        self.parent = None
+
+class RedBlackTree:
+    def __init__(self):
+        self.TNULL = RedBlackNode(0)
+        self.TNULL.color = "black"
+        self.root = self.TNULL
+
+    def insert(self, key):
+        node = RedBlackNode(key)
+        node.left = self.TNULL
+        node.right = self.TNULL
+        node.parent = None
+
+        if self.root == self.TNULL:
+            node.color = "black"
+            self.root = node
+        else:
+            current = self.root
+            while True:
+                parent = current
+                if node.key < current.key:
+                    current = current.left
+                    if current == self.TNULL:
+                        parent.left = node
+                        break
+                else:
+                    current = current.right
+                    if current == self.TNULL:
+                        parent.right = node
+                        break
+            node.parent = parent
+            if node.parent.parent is None:
+                return
+            self.fix_insert(node)
+
+    def fix_insert(self, k):
+        while k.parent.color == "red":
+            if k.parent == k.parent.parent.right:
+                u = k.parent.parent.left
+                if u.color == "red":
+                    u.color = "black"
+                    k.parent.color = "black"
+                    k.parent.parent.color = "red"
+                    k = k.parent.parent
+                else:
+                    if k == k.parent.left:
+                        k = k.parent
+                        self.right_rotate(k)
+                    k.parent.color = "black"
+                    k.parent.parent.color = "red"
+                    self.left_rotate(k.parent.parent)
+            else:
+                u = k.parent.parent.right
+                if u.color == "red":
+                    u.color = "black"
+                    k.parent.color = "black"
+                    k.parent.parent.color = "red"
+                    k = k.parent.parent
+                else:
+                    if k == k.parent.right:
+                        k = k.parent
+                        self.left_rotate(k)
+                    k.parent.color = "black"
+                    k.parent.parent.color = "red"
+                    self.right_rotate(k.parent.parent)
+            if k == self.root:
+                break
+        self.root.color = "black"
+
+    def left_rotate(self, x):
+        y = x.right
+        x.right = y.left
+        if y.left != self.TNULL:
+            y.left.parent = x
+        y.parent = x.parent
+        if x.parent is None:
+            self.root = y
+        elif x == x.parent.left:
+            x.parent.left = y
+        else:
+            x.parent.right = y
+        y.left = x
+        x.parent = y
+
+    def right_rotate(self, x):
+        y = x.left
+        x.left = y.right
+        if y.right != self.TNULL:
+            y.right.parent = x
+        y.parent = x.parent
+        if x.parent is None:
+            self.root = y
+        elif x == x.parent.right:
+            x.parent.right = y
+        else:
+            x.parent.left = y
+        y.right = x
+        x.parent = y
+
+    def search(self, key):
+        return self._search(self.root, key)
+
+    def _search(self, node, key):
+        while node != self.TNULL and key != node.key:
+            if key < node.key:
+                node = node.left
+            else:
+                node = node.right
+        return node
+
+    def delete(self, key):
+        self._delete_node_helper(self.root, key)
+
+    def _delete_node_helper(self, node, key):
+        z = self.TNULL
+        while node != self.TNULL:
+            if node.key == key:
+                z = node
+            if node.key <= key:
+                node = node.right
+            else:
+                node = node.left
+        if z == self.TNULL:
+            print("Couldn't find key in the tree")
+            return
+
+        y = z
+        y_original_color = y.color
+        if z.left == self.TNULL:
+            x = z.right
+            self._rb_transplant(z, z.right)
+        elif z.right == self.TNULL:
+            x = z.left
+            self._rb_transplant(z, z.left)
+        else:
+            y = self._minimum(z.right)
+            y_original_color = y.color
+            x = y.right
+            if y.parent == z:
+                x.parent = y
+            else:
+                self._rb_transplant(y, y.right)
+                y.right = z.right
+                y.right.parent = y
+            self._rb_transplant(z, y)
+            y.left = z.left
+            y.left.parent = y
+            y.color = z.color
+        if y_original_color == "black":
+            self.fix_delete(x)
+
+    def _rb_transplant(self, u, v):
+        if u.parent is None:
+            self.root = v
+        elif u == u.parent.left:
+            u.parent.left = v
+        else:
+            u.parent.right = v
+        v.parent = u.parent
+
+    def fix_delete(self, x):
+        while x != self.root and x.color == "black":
+            if x == x.parent.left:
+                s = x.parent.right
+                if s.color == "red":
+                    s.color = "black"
+                    x.parent.color = "red"
+                    self.left_rotate(x.parent)
+                    s = x.parent.right
+                if s.left.color == "black" and s.right.color == "black":
+                    s.color = "red"
+                    x = x.parent
+                else:
+                    if s.right.color == "black":
+                        s.left.color = "black"
+                        s.color = "red"
+                        self.right_rotate(s)
+                        s = x.parent.right
+                    s.color = x.parent.color
+                    x.parent.color = "black"
+                    s.right.color = "black"
+                    self.left_rotate(x.parent)
+                    x = self.root
+            else:
+                s = x.parent.left
+                if s.color == "red":
+                    s.color = "black"
+                    x.parent.color = "red"
+                    self.right_rotate(x.parent)
+                    s = x.parent.left
+                if s.right.color == "black" and s.left.color == "black":
+                    s.color = "red"
+                    x = x.parent
+                else:
+                    if s.left.color == "black":
+                        s.right.color = "black"
+                        s.color = "red"
+                        self.left_rotate(s)
+                        s = x.parent.left
+                    s.color = x.parent.color
+                    x.parent.color = "black"
+                    s.left.color = "black"
+                    self.right_rotate(x.parent)
+                    x = self.root
+        x.color = "black"
+
+    def _minimum(self, node):
+        while node.left != self.TNULL:
+            node = node.left
+        return node
+
+    def inorder_traversal(self):
+        return self._inorder_traversal_helper(self.root)
+
+    def _inorder_traversal_helper(self, node):
+        res = []
+        if node != self.TNULL:
+            res = self._inorder_traversal_helper(node.left)
+            res.append(node.key)
+            res = res + self._inorder_traversal_helper(node.right)
+        return res
+
+# Test the implementation
+rbt = RedBlackTree()
+rbt.insert(50)
+rbt.insert(30)
+rbt.insert(20)
+rbt.insert(40)
+rbt.insert(70)
+rbt.insert(60)
+rbt.insert(80)
+
+print("Inorder traversal of the RBT:", rbt.inorder_traversal())
+print("Search for 40:", rbt.search(40).key if rbt.search(40) else "Not found")
+print("Search for 90:", rbt.search(90).key if rbt.search(90) else "Not found")
+
+rbt.delete(20)
+print("Inorder traversal after deleting 20:", rbt.inorder_traversal())
+
+rbt.delete(30)
+print("Inorder traversal after deleting 30:", rbt.inorder_traversal())
+
+rbt.delete(50)
+print("Inorder traversal after deleting 50:", rbt.inorder_traversal())
+
+[OUTPUT]
+Inorder traversal of the RBT: [20, 30, 40, 50, 60, 70, 80]
+Search for 40: 40
+Search for 90: 0
+Inorder traversal after deleting 20: [30, 40, 50, 60, 70, 80]
+Inorder traversal after deleting 30: [40, 50, 60, 70, 80]
+Inorder traversal after deleting 50: [40, 60, 70, 80]
